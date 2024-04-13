@@ -1,16 +1,15 @@
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::events::{SwordHitEvent, SwordMissEvent};
+use crate::events::{AxolDeath, SwordHitEvent, SwordMissEvent};
 pub struct GameAudioPlugin;
 
 impl Plugin for GameAudioPlugin {
   fn build(&self, app: &mut App) {
       app.init_resource::<AudioHandles>()
-         .add_systems(Update, (play_sword_hit_sound, play_sword_miss_sound));
+         .add_systems(Update, (play_sword_hit_sound, play_sword_miss_sound, play_axol_died_sound));
   }
 }
-
 
 #[derive(Resource)]
 pub struct AudioHandles {
@@ -20,6 +19,7 @@ pub struct AudioHandles {
   pub sword_miss_1 : Handle<AudioSource>,
   pub sword_miss_2 : Handle<AudioSource>,
   pub sword_miss_3 : Handle<AudioSource>,
+  pub axol_death : Handle<AudioSource>
 }
 
 impl FromWorld for AudioHandles {
@@ -33,12 +33,16 @@ impl FromWorld for AudioHandles {
       sword_miss_1 : assets.load( "audio/sfx/27_sword_miss_1.wav"),
       sword_miss_2 : assets.load( "audio/sfx/27_sword_miss_2.wav"),
       sword_miss_3 : assets.load( "audio/sfx/27_sword_miss_3.wav"),
+      axol_death : assets.load("audio/sfx/24_orc_death_spin.wav")
     }
   }
 }
 
 #[derive(Component)]
 pub struct SwordAudio;
+
+#[derive(Component)]
+pub struct DeathAudio;
 
 pub fn play_sword_hit_sound(
   mut commands: Commands,
@@ -96,6 +100,28 @@ pub fn play_sword_miss_sound(
         SwordAudio,
         AudioBundle {
             source: selected_audio_handle.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        },
+    ));
+  }
+}
+
+pub fn play_axol_died_sound(
+  mut commands: Commands,
+  handle: Res<AudioHandles>,
+  mut event: EventReader<AxolDeath>,
+  exists: Query<Entity, With<DeathAudio>>
+) {
+  // Only play 1 death audio at a time.
+  if exists.iter().next().is_some() {
+    return;
+  }
+
+  if event.read().next().is_some() {
+    commands.spawn((
+        SwordAudio,
+        AudioBundle {
+            source: handle.axol_death.clone(),
             settings: PlaybackSettings::DESPAWN,
         },
     ));

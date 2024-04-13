@@ -73,7 +73,7 @@ pub fn handle_input(
   let mut is_moving = false;
   let shift = key.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
 
-  if key.pressed(KeyCode::Space) || mouse.pressed(MouseButton::Left) {
+  if key.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left) {
     is_moving = false;
     *anim_state = AnimState::Attack;
     sword_event.send_default();
@@ -99,7 +99,7 @@ pub fn handle_input(
         *anim_state = AnimState::Walk;
         walk_event.send(WalkEvent{ direction: dir_facing });
       }
-    } else {
+    } else if *anim_state != AnimState::Attack {
       *anim_state = AnimState::Idle;
     }
   }
@@ -206,25 +206,25 @@ pub fn setup_player_animations() -> AnimationIndices {
     frames : vec![30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
     flip_x: false,
     flip_y: false,
-    looping: true
+    looping: false
   });
   animation_indices.animations.insert((AnimState::Attack, MoveDir::Down), AnimationDirection {
     frames : vec![20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
     flip_x: false,
     flip_y: false,
-    looping: true
+    looping: false
   });
   animation_indices.animations.insert((AnimState::Attack, MoveDir::Left), AnimationDirection {
     frames : vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
     flip_x: false,
     flip_y: false,
-    looping: true
+    looping: false
   });
   animation_indices.animations.insert((AnimState::Attack, MoveDir::Right), AnimationDirection {
     frames : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     flip_x: false,
     flip_y: false,
-    looping: true
+    looping: false
   });
 
   animation_indices
@@ -233,9 +233,9 @@ pub fn setup_player_animations() -> AnimationIndices {
 pub fn animate_sprites(
   time: Res<Time>,
   atlas_handles: Res<AtlasHandles>,
-  mut query: Query<(&AnimState, &MoveDir, &mut AnimFrame, &AnimationIndices, &mut AnimationTimer, &mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>
+  mut query: Query<(&mut AnimState, &MoveDir, &mut AnimFrame, &AnimationIndices, &mut AnimationTimer, &mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>
 ) {
-  for (anim_state, move_dir, mut frame, indices, mut timer, mut sprite, mut texture_atlas) in &mut query {
+  for (mut anim_state, move_dir, mut frame, indices, mut timer, mut sprite, mut texture_atlas) in &mut query {
 
     timer.tick(time.delta());
     if timer.just_finished() {
@@ -245,7 +245,12 @@ pub fn animate_sprites(
         (frame.0 + 1) % info.frames.len()
       } else if (frame.0 + 1) < info.frames.len() - 1 {
         frame.0 + 1
+      } else if *anim_state != AnimState::Dead {
+        // Not looping and at end of frames.  Go back to Idle If not Dead.
+        *anim_state = AnimState::Idle;
+        0
       } else {
+        // Dead... stay dead
         info.frames.len() - 1
       };
       
@@ -256,11 +261,11 @@ pub fn animate_sprites(
       sprite.flip_x = info.flip_x;
       sprite.flip_y = info.flip_y;
 
-      if *texture_atlas != atlas_handles.handles[indices.sheet_index[anim_state]] {
-        *texture_atlas = atlas_handles.handles[indices.sheet_index[anim_state]].clone();
+      if *texture_atlas != atlas_handles.handles[indices.sheet_index[&anim_state]] {
+        *texture_atlas = atlas_handles.handles[indices.sheet_index[&anim_state]].clone();
       }
 
-      *timer = AnimationTimer(Timer::from_seconds(indices.timer_duration[anim_state], TimerMode::Repeating));
+      *timer = AnimationTimer(Timer::from_seconds(indices.timer_duration[&anim_state], TimerMode::Repeating));
     }
   }
 }

@@ -13,9 +13,11 @@ impl Plugin for SpritePlugin {
 pub enum AnimState {
   #[default]
   Idle,
+  IdleDamage,
   Walk,
   Run,
-  Attack
+  Attack,
+  Dead
 }
 
 #[derive(Debug, Default, Component, PartialEq, Eq, Hash, Clone, Copy)]

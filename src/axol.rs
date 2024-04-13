@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{player::Moving, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
+use crate::{combat::Health, player::Moving, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 pub struct AxolPlugin;
 
@@ -16,6 +16,7 @@ pub struct Axol;
 #[derive(Default, Bundle)]
 pub struct AxolBundle {
   axol: Axol,
+  health: Health,
   anim_state: AnimState,
   moving: Moving,
   move_dir: MoveDir,
@@ -38,6 +39,7 @@ pub fn setup_axol(
   commands.spawn(
     AxolBundle {
       axol: Axol,
+      health: Health(20),
       anim_state: AnimState::Idle,
       moving: Moving(false),
       move_dir: MoveDir::Left,
@@ -90,6 +92,62 @@ pub fn setup_axol_animations() -> AnimationIndices {
     flip_x: true,
     flip_y: false,
     looping: true
+  });
+
+  // IDLE Damage
+  animation_indices.timer_duration.insert(AnimState::IdleDamage, 0.8);
+  animation_indices.sheet_index.insert(AnimState::IdleDamage, 3);
+  animation_indices.animations.insert((AnimState::IdleDamage, MoveDir::Up), AnimationDirection {
+    frames : vec![15, 16, 15, 15, 15, 16, 15, 15, 15],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleDamage, MoveDir::Down), AnimationDirection {
+    frames : vec![15, 16, 15, 15, 15, 16, 15, 15, 15],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleDamage, MoveDir::Left), AnimationDirection {
+    frames : vec![15, 16, 15, 15, 15, 16, 15, 15, 15],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleDamage, MoveDir::Right), AnimationDirection {
+    frames : vec![15, 16, 15, 15, 15, 16, 15, 15, 15],
+    flip_x: true,
+    flip_y: false,
+    looping: true
+  });
+
+  // Dead
+  animation_indices.timer_duration.insert(AnimState::Dead, 0.8);
+  animation_indices.sheet_index.insert(AnimState::Dead, 3);
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Up), AnimationDirection {
+    frames : vec![15, 16, 17, 18, 19],
+    flip_x: false,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Down), AnimationDirection {
+    frames : vec![15, 16, 17, 18, 19],
+    flip_x: false,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Left), AnimationDirection {
+    frames : vec![15, 16, 17, 18, 19],
+    flip_x: false,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Right), AnimationDirection {
+    frames : vec![15, 16, 17, 18, 19],
+    flip_x: true,
+    flip_y: false,
+    looping: false
   });
 
   animation_indices
