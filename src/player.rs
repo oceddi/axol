@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-
-use crate::sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir};
-
-
+use crate::{events::{RunEvent, SwordHitEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 #[derive(Default, Component, PartialEq)]
 pub struct Moving(pub bool);
@@ -64,35 +61,51 @@ pub fn setup_player(
 }
 
 pub fn handle_input(
-  input: Res<Input<KeyCode>>,
+  key: Res<Input<KeyCode>>,
+  mouse: Res<Input<MouseButton>>,
+  mut walk_event: EventWriter<WalkEvent>,
+  mut run_event: EventWriter<RunEvent>,
+  mut sword_event: EventWriter<SwordHitEvent>,
   mut player: Query<(&mut Transform, &mut Moving, &mut MoveDir, &mut AnimState), With<Player>>
 ) {
   let (mut transform, mut moving, mut move_dir, mut anim_state) = player.get_single_mut().expect("player not spawned");
   let mut dir_facing = *move_dir;
   let mut is_moving = false;
+  let shift = key.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
 
-  if input.pressed(KeyCode::Up) {
-    dir_facing = MoveDir::Up;
-    is_moving = true;
-  } else if input.pressed(KeyCode::Down) {
-    dir_facing = MoveDir::Down;
-    is_moving = true;
-  } else if input.pressed(KeyCode::Left) {
-    dir_facing = MoveDir::Left;
-    is_moving = true;
-  } else if input.pressed(KeyCode::Right) {
-    dir_facing = MoveDir::Right;
-    is_moving = true;
+  if key.pressed(KeyCode::Space) || mouse.pressed(MouseButton::Left) {
+    is_moving = false;
+    *anim_state = AnimState::Attack;
+    sword_event.send_default();
+  } else {
+    if key.pressed(KeyCode::Up) {
+      dir_facing = MoveDir::Up;
+      is_moving = true;
+    } else if key.pressed(KeyCode::Down) {
+      dir_facing = MoveDir::Down;
+      is_moving = true;
+    } else if key.pressed(KeyCode::Left) {
+      dir_facing = MoveDir::Left;
+      is_moving = true;
+    } else if key.pressed(KeyCode::Right) {
+      dir_facing = MoveDir::Right;
+      is_moving = true;
+    }
+    if is_moving {
+      if shift {
+        *anim_state = AnimState::Run;
+        run_event.send(RunEvent{ direction: dir_facing });
+      } else {
+        *anim_state = AnimState::Walk;
+        walk_event.send(WalkEvent{ direction: dir_facing });
+      }
+    } else {
+      *anim_state = AnimState::Idle;
+    }
   }
 
   *moving = Moving(is_moving);
   *move_dir = dir_facing;
-
-  if is_moving {
-    *anim_state = AnimState::Walk;
-  } else {
-    *anim_state = AnimState::Idle;
-  }
 }
 
 pub fn setup_player_animations() -> AnimationIndices {
@@ -130,29 +143,85 @@ pub fn setup_player_animations() -> AnimationIndices {
     looping: true
   });
 
-  // WALK/RUN
+  // WALK
   animation_indices.timer_duration.insert(AnimState::Walk, 0.1);
   animation_indices.sheet_index.insert(AnimState::Walk, 1);
   animation_indices.animations.insert((AnimState::Walk, MoveDir::Up), AnimationDirection {
-    frames : vec![36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
+    frames : vec![36, 37, 38, 39, 40, 41, 42, 43],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Walk, MoveDir::Down), AnimationDirection {
-    frames : vec![24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
+    frames : vec![24, 25, 26, 27, 28, 29, 30, 31],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Walk, MoveDir::Left), AnimationDirection {
-    frames : vec![12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    frames : vec![12, 13, 14, 15, 16, 17, 18, 19],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Walk, MoveDir::Right), AnimationDirection {
-    frames : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    frames : vec![0, 1, 2, 3, 4, 5, 6, 7],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+
+  // Run
+  animation_indices.timer_duration.insert(AnimState::Run, 0.1);
+  animation_indices.sheet_index.insert(AnimState::Run, 1);
+  animation_indices.animations.insert((AnimState::Run, MoveDir::Up), AnimationDirection {
+    frames : vec![44, 45, 46, 47],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Run, MoveDir::Down), AnimationDirection {
+    frames : vec![32, 33, 34, 35],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Run, MoveDir::Left), AnimationDirection {
+    frames : vec![20, 21, 22, 23],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Run, MoveDir::Right), AnimationDirection {
+    frames : vec![8, 9, 10, 11],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+
+  // ATTACK
+  animation_indices.timer_duration.insert(AnimState::Attack, 0.08);
+  animation_indices.sheet_index.insert(AnimState::Attack, 2);
+  animation_indices.animations.insert((AnimState::Attack, MoveDir::Up), AnimationDirection {
+    frames : vec![30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Attack, MoveDir::Down), AnimationDirection {
+    frames : vec![20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Attack, MoveDir::Left), AnimationDirection {
+    frames : vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Attack, MoveDir::Right), AnimationDirection {
+    frames : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     flip_x: false,
     flip_y: false,
     looping: true
@@ -180,7 +249,6 @@ pub fn animate_player(
       info.frames.len() - 1
     };
     
-
     sprite.index = info.frames[next_frame_index];
 
     frame.0 = next_frame_index;

@@ -13,7 +13,9 @@ impl Plugin for SpritePlugin {
 pub enum AnimState {
   #[default]
   Idle,
-  Walk
+  Walk,
+  Run,
+  Attack
 }
 
 #[derive(Debug, Default, Component, PartialEq, Eq, Hash, Clone, Copy)]
@@ -48,7 +50,7 @@ pub struct AnimFrame(pub usize);
 
 #[derive(Resource, Clone)]
 pub struct AtlasHandles {
-  pub handles : [Handle<TextureAtlas>; 2]
+  pub handles : [Handle<TextureAtlas>; 3]
 }
 
 pub fn setup_atlases(
@@ -84,5 +86,18 @@ pub fn setup_atlases(
   let handle = atlases.add(atlas_player);
   handle_vector.push(handle);
 
-  commands.insert_resource(AtlasHandles { handles: handle_vector.try_into().expect("Expected vector length of 2") });
+  // PLAYER SWORD ATTACKS
+  let texture_player: Handle<Image> = asset_server.load("sprites/player/Warrior_sword_attacks.png");
+  let atlas_player = TextureAtlas::from_grid(
+    texture_player,
+    Vec2::new(80.0, 80.0),
+    10,
+    5,
+    None,
+    None
+  );
+  let handle = atlases.add(atlas_player);
+  handle_vector.push(handle);
+
+  commands.insert_resource(AtlasHandles { handles: handle_vector.try_into().expect("Expected vector length of 3") });
 }

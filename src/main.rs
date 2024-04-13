@@ -1,17 +1,23 @@
+use audio::GameAudioPlugin;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
+use events::EventPlugin;
 use player::PlayerPlugin;
+use player_movement::PlayerMovementPlugin;
 use sprite::SpritePlugin;
 
 // AXOL
+mod audio;
+mod events;
 mod player;
+mod player_movement;
 mod sprite;
 
 fn main() {
     App::new()
         .insert_resource(AssetMetaCheck::Never)
         .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()), LdtkPlugin))
-        .add_plugins((PlayerPlugin, SpritePlugin))
+        .add_plugins((EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin))
         .insert_resource(LevelSelection::index(0))
         .add_systems(Startup, setup)
         .run();
