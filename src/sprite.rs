@@ -50,7 +50,7 @@ pub struct AnimFrame(pub usize);
 
 #[derive(Resource, Clone)]
 pub struct AtlasHandles {
-  pub handles : [Handle<TextureAtlas>; 3]
+  pub handles : [Handle<TextureAtlas>; 4]
 }
 
 pub fn setup_atlases(
@@ -99,5 +99,18 @@ pub fn setup_atlases(
   let handle = atlases.add(atlas_player);
   handle_vector.push(handle);
 
-  commands.insert_resource(AtlasHandles { handles: handle_vector.try_into().expect("Expected vector length of 3") });
+  // AXOL
+  let texture_player: Handle<Image> = asset_server.load("sprites/axol/Alien_sheet.png");
+  let atlas_player = TextureAtlas::from_grid(
+    texture_player,
+    Vec2::new(128.0, 64.0),
+    5,
+    4,
+    None,
+    None
+  );
+  let handle = atlases.add(atlas_player);
+  handle_vector.push(handle);
+
+  commands.insert_resource(AtlasHandles { handles: handle_vector.try_into().expect("Expected vector length of 4") });
 }

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{events::{RunEvent, SwordHitEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
+use crate::{events::{RunEvent, SwordSwingEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 #[derive(Default, Component, PartialEq)]
 pub struct Moving(pub bool);
@@ -10,7 +10,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
       app.add_systems(PostStartup, setup_player)
-      .add_systems(Update, (handle_input, animate_player));
+      .add_systems(Update, (handle_input, animate_sprites));
   }
 }
 
@@ -65,7 +65,7 @@ pub fn handle_input(
   mouse: Res<Input<MouseButton>>,
   mut walk_event: EventWriter<WalkEvent>,
   mut run_event: EventWriter<RunEvent>,
-  mut sword_event: EventWriter<SwordHitEvent>,
+  mut sword_event: EventWriter<SwordSwingEvent>,
   mut player: Query<(&mut Moving, &mut MoveDir, &mut AnimState), With<Player>>
 ) {
   let (mut moving, mut move_dir, mut anim_state) = player.get_single_mut().expect("player not spawned");
@@ -230,36 +230,37 @@ pub fn setup_player_animations() -> AnimationIndices {
   animation_indices
 }
 
-pub fn animate_player(
+pub fn animate_sprites(
   time: Res<Time>,
   atlas_handles: Res<AtlasHandles>,
-  mut query: Query<(&AnimState, &MoveDir, &mut AnimFrame, &AnimationIndices, &mut AnimationTimer, &mut TextureAtlasSprite, &mut Handle<TextureAtlas>), With<Player>>
+  mut query: Query<(&AnimState, &MoveDir, &mut AnimFrame, &AnimationIndices, &mut AnimationTimer, &mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>
 ) {
-  let (anim_state, move_dir, mut frame, indices, mut timer, mut sprite, mut texture_atlas) = query.get_single_mut().expect("player not spawned");
+  for (anim_state, move_dir, mut frame, indices, mut timer, mut sprite, mut texture_atlas) in &mut query {
 
-  timer.tick(time.delta());
-  if timer.just_finished() {
-    let info = &indices.animations[&(*anim_state, *move_dir)];
-    let next_frame_index = 
-    if info.looping {
-      (frame.0 + 1) % info.frames.len()
-    } else if (frame.0 + 1) < info.frames.len() - 1 {
-      frame.0 + 1
-    } else {
-      info.frames.len() - 1
-    };
-    
-    sprite.index = info.frames[next_frame_index];
+    timer.tick(time.delta());
+    if timer.just_finished() {
+      let info = &indices.animations[&(*anim_state, *move_dir)];
+      let next_frame_index = 
+      if info.looping {
+        (frame.0 + 1) % info.frames.len()
+      } else if (frame.0 + 1) < info.frames.len() - 1 {
+        frame.0 + 1
+      } else {
+        info.frames.len() - 1
+      };
+      
+      sprite.index = info.frames[next_frame_index];
 
-    frame.0 = next_frame_index;
+      frame.0 = next_frame_index;
 
-    sprite.flip_x = info.flip_x;
-    sprite.flip_y = info.flip_y;
+      sprite.flip_x = info.flip_x;
+      sprite.flip_y = info.flip_y;
 
-    if *texture_atlas != atlas_handles.handles[indices.sheet_index[anim_state]] {
-      *texture_atlas = atlas_handles.handles[indices.sheet_index[anim_state]].clone();
+      if *texture_atlas != atlas_handles.handles[indices.sheet_index[anim_state]] {
+        *texture_atlas = atlas_handles.handles[indices.sheet_index[anim_state]].clone();
+      }
+
+      *timer = AnimationTimer(Timer::from_seconds(indices.timer_duration[anim_state], TimerMode::Repeating));
     }
-
-    *timer = AnimationTimer(Timer::from_seconds(indices.timer_duration[anim_state], TimerMode::Repeating));
   }
 }

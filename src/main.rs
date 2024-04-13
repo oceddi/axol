@@ -1,6 +1,8 @@
 use audio::GameAudioPlugin;
+use axol::AxolPlugin;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
+use combat::CombatPlugin;
 use events::EventPlugin;
 use player::{Player, PlayerPlugin};
 use player_movement::PlayerMovementPlugin;
@@ -8,6 +10,8 @@ use sprite::SpritePlugin;
 
 // AXOL
 mod audio;
+mod axol;
+mod combat;
 mod events;
 mod player;
 mod player_movement;
@@ -17,7 +21,7 @@ fn main() {
     App::new()
         .insert_resource(AssetMetaCheck::Never)
         .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()), LdtkPlugin))
-        .add_plugins((EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin))
+        .add_plugins((EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin, AxolPlugin, CombatPlugin))
         .insert_resource(LevelSelection::index(0))
         .add_systems(Startup, setup)
         .add_systems(Update, camera_follow_player)
