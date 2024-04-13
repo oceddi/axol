@@ -2,7 +2,7 @@ use audio::GameAudioPlugin;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
 use events::EventPlugin;
-use player::PlayerPlugin;
+use player::{Player, PlayerPlugin};
 use player_movement::PlayerMovementPlugin;
 use sprite::SpritePlugin;
 
@@ -20,6 +20,7 @@ fn main() {
         .add_plugins((EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin))
         .insert_resource(LevelSelection::index(0))
         .add_systems(Startup, setup)
+        .add_systems(Update, camera_follow_player)
         .run();
 }
 
@@ -36,3 +37,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
+fn camera_follow_player(
+    mut camera: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    player: Query<&Transform, With<Player>>
+) {
+    let mut camera_transform = camera.get_single_mut().expect("Camera not spawned");
+    let player_transform = player.get_single().expect("Player not spawned");
+
+    camera_transform.translation.x = player_transform.translation.x;
+    camera_transform.translation.y = player_transform.translation.y;
+}

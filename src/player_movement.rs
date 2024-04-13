@@ -17,7 +17,7 @@ fn handle_player_walk(
   if let Some(event) = event.read().next() {
     let direction = event.direction;
 
-    let (mut transform) = player.get_single_mut().expect("Player despawned");
+    let mut transform = player.get_single_mut().expect("Player despawned");
 
     match direction {
       MoveDir::Up => {
@@ -43,7 +43,7 @@ fn handle_player_run(
   if let Some(event) = event.read().next() {
     let direction = event.direction;
 
-    let (mut transform) = player.get_single_mut().expect("Player despawned");
+    let mut transform = player.get_single_mut().expect("Player despawned");
 
     match direction {
       MoveDir::Up => {

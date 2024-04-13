@@ -66,9 +66,9 @@ pub fn handle_input(
   mut walk_event: EventWriter<WalkEvent>,
   mut run_event: EventWriter<RunEvent>,
   mut sword_event: EventWriter<SwordHitEvent>,
-  mut player: Query<(&mut Transform, &mut Moving, &mut MoveDir, &mut AnimState), With<Player>>
+  mut player: Query<(&mut Moving, &mut MoveDir, &mut AnimState), With<Player>>
 ) {
-  let (mut transform, mut moving, mut move_dir, mut anim_state) = player.get_single_mut().expect("player not spawned");
+  let (mut moving, mut move_dir, mut anim_state) = player.get_single_mut().expect("player not spawned");
   let mut dir_facing = *move_dir;
   let mut is_moving = false;
   let shift = key.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);

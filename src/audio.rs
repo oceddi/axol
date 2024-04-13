@@ -7,7 +7,7 @@ pub struct GameAudioPlugin;
 impl Plugin for GameAudioPlugin {
   fn build(&self, app: &mut App) {
       app.init_resource::<AudioHandles>()
-         .add_systems(Update, (play_sword_hit_sound));
+         .add_systems(Update, play_sword_hit_sound);
   }
 }
 
@@ -60,13 +60,13 @@ pub fn play_sword_hit_sound(
       _ => panic!("Invalid random index"),
   };
 
-  for _ in event.read() {
+  if event.read().next().is_some() {
     commands.spawn((
-      SwordAudio,
-      AudioBundle {
-      source : selected_audio_handle,
-      settings: PlaybackSettings::DESPAWN
-    }));
-    break;
+        SwordAudio,
+        AudioBundle {
+            source: selected_audio_handle.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        },
+    ));
   }
 }
