@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::{events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, StartGameEvent, SwordHitEvent, SwordMissEvent}, game::{GameState, InGameSet}};
+use crate::{events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, StartGameEvent, SwordHitEvent, SwordMissEvent}, game::InGameSet};
 pub struct GameAudioPlugin;
 
 impl Plugin for GameAudioPlugin {
@@ -67,7 +67,6 @@ pub struct Music;
 pub fn play_cave_theme_1_sound(
   mut commands: Commands,
   handle: Res<AudioHandles>,
-  state: Res<State<GameState>>,
   mut event: EventReader<StartGameEvent>,
   mut query_music: Query<(Entity, &AudioSink), With<Music>>
 ) {
@@ -78,7 +77,6 @@ pub fn play_cave_theme_1_sound(
       commands.entity(entity).despawn();
     }
 
-    println!("PLAY MUSIC {:?}", state);
     commands.spawn((
         Music,
         AudioBundle {

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{combat::{AttackCooldown, Health}, player::Moving, spawner::{SpawnTimer, Spawner, SpawnerBundle, WaveCount}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, MoveDir}};
+use crate::{combat::{AttackCooldown, Health}, player::Moving, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, MoveDir}};
 
 #[derive(Default, Component)]
 pub struct Axol;

@@ -7,7 +7,6 @@ use crate::{axol::Axol, combat::Health, events::{GameOverEvent, NewWaveEvent, Pl
 pub enum InGameSet {
   PlayAudio,
   PlayerMovement,
-  Animations,
   Camera,
   Combat,
   Restart,
@@ -22,7 +21,6 @@ pub enum GameState {
     Paused,
     NextWave,
     Restart,
-    GameOver,
 }
 
 #[derive(Resource, Default)]
@@ -90,7 +88,6 @@ fn game_state_input_events(
 ) {
 
   if keyboard_input.just_pressed(KeyCode::S) && *state.get() == GameState::Splash {
-    println!("GAME STATE INGAME");
     next_state.set(GameState::InGame);
   }
 
@@ -176,14 +173,12 @@ fn handle_player_death(
 }
 
 fn wait_for_restart(
-  mut commands: Commands,
   time: Res<Time>,
   mut timer: ResMut<GameTimer>,
   mut player: Query<(&mut AnimState, &mut AnimFrame, &mut Health), With<Player>>,
   mut next_state: ResMut<NextState<GameState>>,
 ) {
   if timer.tick(time.delta()).finished() {
-    println!("RESTARTING");
     let (mut state, mut frame, mut health) = player.get_single_mut().expect("Player despawned");
 
     *state = AnimState::Idle;
@@ -199,14 +194,19 @@ fn handle_game_over(
   entities: Query<Entity, Or<(With<Axol>, With<Player>)>>,
   mut wave_events: EventReader<NewWaveEvent>,
   mut next_state: ResMut<NextState<GameState>>,
+  mut game: ResMut<Game>,
+  score: Res<Score>
 ) {
   if event.read().next().is_some() {
-    println!("GAME OVER");
     for entity in entities.iter() {
       commands.entity(entity).despawn_recursive();
     }
     wave_events.clear();
     next_state.set(GameState::Splash);
+
+    if **score > game.high_score {
+      game.high_score = **score;
+    }
   }
 }
 
@@ -244,7 +244,7 @@ pub fn check_for_wave_cleared(
 ) {
   let mut total = 0;
 
-  for (entity, count) in spawner.iter() {
+  for (_entity, count) in spawner.iter() {
     total += count.0;
   }
 
@@ -255,7 +255,6 @@ pub fn check_for_wave_cleared(
   }
 
   if total == 0 {
-    println!("WAVE CLEARED");
     game.wave_number += 1;
 
     for (entity, _) in spawner.iter() {

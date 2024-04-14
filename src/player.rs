@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{combat::Health, events::{RunEvent, StartGameEvent, SwordSwingEvent, WalkEvent}, game::{GameState, InGameSet}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
+use crate::{combat::Health, events::{RunEvent, SwordSwingEvent, WalkEvent}, game::{GameState, InGameSet}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 #[derive(Default, Component, PartialEq)]
 pub struct Moving(pub bool);
@@ -106,7 +106,7 @@ pub fn handle_input(
         run_event.send(RunEvent{ direction: dir_facing });
       } else {
         *anim_state = AnimState::Walk;
-        walk_event.send(WalkEvent{ direction: dir_facing, entity: entity });
+        walk_event.send(WalkEvent{ direction: dir_facing, entity });
       }
     } else if *anim_state != AnimState::Attack {
       if health.0 < health.1 as i8 {

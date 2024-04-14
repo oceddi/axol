@@ -66,17 +66,16 @@ pub fn check_player_attack(
 
 pub fn handle_player_damage (
   mut event: EventReader<AxolBiteEvent>,
-  mut player: Query<(&mut AnimState, &mut Health), With<Player>>,
+  mut player: Query<&mut Health, With<Player>>,
   mut player_death: EventWriter<PlayerDeathEvent>
 ) {
   for hit in event.read() {
-    let (mut target_state, mut target_health) = player.get_single_mut().expect("No Player");
+    let mut target_health = player.get_single_mut().expect("No Player");
 
     if target_health.0 > 0 {
       target_health.0 -= hit.amount as i8;
       if target_health.0 <= 0 {
         player_death.send_default();
-        println!("YOU DIED!!");
       }
     }
   }
@@ -142,21 +141,19 @@ pub fn walk_to_player (
 
         let distance = dx.hypot(dy);
 
-        if axol_health.0 > 0 && player_health.0 > 0 {
-            if distance > 70. {
-                if (dx.abs() > dy.abs()) && (dx > 0.) {
-                    *axol_dir = MoveDir::Left;
-                } else if (dx.abs() > dy.abs()) && (dx < 0.) {
-                    *axol_dir = MoveDir::Right;
-                } else if (dy.abs() > dx.abs()) && (dy > 0.) {
-                    *axol_dir = MoveDir::Down;
-                } else if (dy.abs() > dx.abs()) && (dy < 0.) {
-                    *axol_dir = MoveDir::Up;
-                }
+        if axol_health.0 > 0 && player_health.0 > 0 && distance > 70. {
+          if (dx.abs() > dy.abs()) && (dx > 0.) {
+              *axol_dir = MoveDir::Left;
+          } else if (dx.abs() > dy.abs()) && (dx < 0.) {
+              *axol_dir = MoveDir::Right;
+          } else if (dy.abs() > dx.abs()) && (dy > 0.) {
+              *axol_dir = MoveDir::Down;
+          } else if (dy.abs() > dx.abs()) && (dy < 0.) {
+              *axol_dir = MoveDir::Up;
+          }
 
-                walk_event.send(WalkEvent { direction: *axol_dir, entity: entity });
-                *anim_state = AnimState::Walk;
-            }
+          walk_event.send(WalkEvent { direction: *axol_dir, entity });
+          *anim_state = AnimState::Walk;
         }
     }
 }

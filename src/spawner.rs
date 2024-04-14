@@ -39,34 +39,31 @@ fn process_wait_to_spawn(
   };
 
   for (mut timer, mut remaining) in spawn_timers.iter_mut() {
-    if timer.tick(time.delta()).finished() {
-      if remaining.0 > 0 {
-
-        commands.spawn(
-          AxolBundle {
-            axol: Axol,
-            health: Health(20, 20),
-            anim_state: AnimState::Idle,
-            moving: Moving(false),
-            move_dir: MoveDir::Left,
-            sprite_sheet: SpriteSheetBundle {
-              sprite: sprite_axol.clone(),
-              texture_atlas: atlas_handles.handles[4].clone(),
-              transform: Transform {
-                translation: Vec3{ x: 605., y: 620., z: 10. },
-                ..default()
-              },
+    if timer.tick(time.delta()).finished() && remaining.0 > 0 {
+      commands.spawn(
+        AxolBundle {
+          axol: Axol,
+          health: Health(20, 20),
+          anim_state: AnimState::Idle,
+          moving: Moving(false),
+          move_dir: MoveDir::Left,
+          sprite_sheet: SpriteSheetBundle {
+            sprite: sprite_axol.clone(),
+            texture_atlas: atlas_handles.handles[4].clone(),
+            transform: Transform {
+              translation: Vec3{ x: 605., y: 620., z: 10. },
               ..default()
             },
-            animation_indices: setup_axol_animations(),
-            anim_timer: AnimationTimer(Timer::from_seconds(0.8, TimerMode::Repeating)),
-            anim_frame: AnimFrame(0),
-            cooldown: AttackCooldown(Timer::from_seconds(1.5, TimerMode::Repeating))
+            ..default()
           },
-        );
+          animation_indices: setup_axol_animations(),
+          anim_timer: AnimationTimer(Timer::from_seconds(0.8, TimerMode::Repeating)),
+          anim_frame: AnimFrame(0),
+          cooldown: AttackCooldown(Timer::from_seconds(1.5, TimerMode::Repeating))
+        },
+      );
 
-        remaining.0 -= 1;
-      }
+      remaining.0 -= 1;
     }
   }
 }
