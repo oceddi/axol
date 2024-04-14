@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::events::{AxolDeath, SwordHitEvent, SwordMissEvent};
+use crate::events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, StartGameEvent, SwordHitEvent, SwordMissEvent};
 pub struct GameAudioPlugin;
 
 impl Plugin for GameAudioPlugin {
   fn build(&self, app: &mut App) {
-      app.init_resource::<AudioHandles>()
-         .add_systems(Update, (play_sword_hit_sound, play_sword_miss_sound, play_axol_died_sound));
+    app.init_resource::<AudioHandles>()
+        .add_systems(Update, (play_cave_theme_1_sound, play_sword_hit_sound, play_sword_miss_sound, play_axol_bite_sound, play_axol_died_sound, play_player_died_sound));
   }
 }
 
@@ -19,7 +19,10 @@ pub struct AudioHandles {
   pub sword_miss_1 : Handle<AudioSource>,
   pub sword_miss_2 : Handle<AudioSource>,
   pub sword_miss_3 : Handle<AudioSource>,
-  pub axol_death : Handle<AudioSource>
+  pub axol_bite : Handle<AudioSource>,
+  pub axol_death : Handle<AudioSource>,
+  pub player_death: Handle<AudioSource>,
+  pub cave_theme_1: Handle<AudioSource>
 }
 
 impl FromWorld for AudioHandles {
@@ -33,7 +36,10 @@ impl FromWorld for AudioHandles {
       sword_miss_1 : assets.load( "audio/sfx/27_sword_miss_1.wav"),
       sword_miss_2 : assets.load( "audio/sfx/27_sword_miss_2.wav"),
       sword_miss_3 : assets.load( "audio/sfx/27_sword_miss_3.wav"),
-      axol_death : assets.load("audio/sfx/24_orc_death_spin.wav")
+      axol_bite : assets.load("audio/sfx/07_landing_on_grass_1.wav"),
+      axol_death : assets.load("audio/sfx/24_orc_death_spin.wav"),
+      player_death: assets.load("audio/sfx/14_human_death_spin.wav"),
+      cave_theme_1: assets.load("audio/music/cave_theme_1.wav")
     }
   }
 }
@@ -42,7 +48,26 @@ impl FromWorld for AudioHandles {
 pub struct SwordAudio;
 
 #[derive(Component)]
+pub struct BiteAudio;
+
+#[derive(Component)]
 pub struct DeathAudio;
+
+
+pub fn play_cave_theme_1_sound(
+  mut commands: Commands,
+  handle: Res<AudioHandles>,
+  mut event: EventReader<StartGameEvent>,
+) {
+  if event.read().next().is_some() {
+    commands.spawn((
+        AudioBundle {
+            source: handle.cave_theme_1.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        },
+    ));
+  }
+}
 
 pub fn play_sword_hit_sound(
   mut commands: Commands,
@@ -106,6 +131,28 @@ pub fn play_sword_miss_sound(
   }
 }
 
+pub fn play_axol_bite_sound(
+  mut commands: Commands,
+  handle: Res<AudioHandles>,
+  mut event: EventReader<AxolBiteEvent>,
+  exists: Query<Entity, With<BiteAudio>>
+) {
+  // Only play 1 bite audio at a time.
+  if exists.iter().next().is_some() {
+    return;
+  }
+
+  if event.read().next().is_some() {
+    commands.spawn((
+        BiteAudio,
+        AudioBundle {
+            source: handle.axol_bite.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        },
+    ));
+  }
+}
+
 pub fn play_axol_died_sound(
   mut commands: Commands,
   handle: Res<AudioHandles>,
@@ -119,9 +166,31 @@ pub fn play_axol_died_sound(
 
   if event.read().next().is_some() {
     commands.spawn((
-        SwordAudio,
+        DeathAudio,
         AudioBundle {
             source: handle.axol_death.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        },
+    ));
+  }
+}
+
+pub fn play_player_died_sound(
+  mut commands: Commands,
+  handle: Res<AudioHandles>,
+  mut event: EventReader<PlayerDeathEvent>,
+  exists: Query<Entity, With<DeathAudio>>
+) {
+  // Only play 1 death audio at a time.
+  if exists.iter().next().is_some() {
+    return;
+  }
+
+  if event.read().next().is_some() {
+    commands.spawn((
+        DeathAudio,
+        AudioBundle {
+            source: handle.player_death.clone(),
             settings: PlaybackSettings::DESPAWN,
         },
     ));

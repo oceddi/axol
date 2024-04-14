@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{events::{RunEvent, SwordSwingEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
+use crate::{combat::Health, events::{RunEvent, StartGameEvent, SwordSwingEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 #[derive(Default, Component, PartialEq)]
 pub struct Moving(pub bool);
@@ -10,7 +10,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
       app.add_systems(PostStartup, setup_player)
-      .add_systems(Update, (handle_input, animate_sprites));
+      .add_systems(Update, handle_input);
   }
 }
 
@@ -20,6 +20,7 @@ pub struct Player;
 #[derive(Default, Bundle)]
 pub struct PlayerBundle {
   player: Player,
+  health: Health,
   amin_state: AnimState,
   moving: Moving,
   move_dir: MoveDir,
@@ -31,7 +32,8 @@ pub struct PlayerBundle {
 
 pub fn setup_player(
   mut commands: Commands,
-  atlas_handles: Res<AtlasHandles>
+  atlas_handles: Res<AtlasHandles>,
+  mut startgame_event: EventWriter<StartGameEvent>,
 ) {
   let sprite_player = TextureAtlasSprite {
     index: 0,
@@ -41,6 +43,7 @@ pub fn setup_player(
   commands.spawn(
     PlayerBundle {
       player: Player,
+      health: Health(20, 20),
       amin_state: AnimState::Idle,
       moving: Moving(false),
       move_dir: MoveDir::Right,
@@ -48,7 +51,7 @@ pub fn setup_player(
         sprite: sprite_player,
         texture_atlas: atlas_handles.handles[0].clone(),
         transform: Transform {
-          translation: Vec3 { x: 300., y: 200., z: 10.},
+          translation: Vec3 { x: 500., y: 500., z: 10.},
           ..default()
         },
         ..default()
@@ -58,6 +61,8 @@ pub fn setup_player(
       anim_frame: AnimFrame(0)
     }
   );
+
+  startgame_event.send_default();
 }
 
 pub fn handle_input(
@@ -66,18 +71,23 @@ pub fn handle_input(
   mut walk_event: EventWriter<WalkEvent>,
   mut run_event: EventWriter<RunEvent>,
   mut sword_event: EventWriter<SwordSwingEvent>,
-  mut player: Query<(&mut Moving, &mut MoveDir, &mut AnimState), With<Player>>
+  mut player: Query<(&mut Moving, &mut MoveDir, &mut AnimState, &mut AnimFrame, &Health), With<Player>>
 ) {
-  let (mut moving, mut move_dir, mut anim_state) = player.get_single_mut().expect("player not spawned");
+  let (mut moving, mut move_dir, mut anim_state, mut anim_frame, health) = player.get_single_mut().expect("player not spawned");
   let mut dir_facing = *move_dir;
   let mut is_moving = false;
   let shift = key.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
 
+  if *anim_state == AnimState::Dead {
+    return;
+  }
+
   if key.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left) {
     is_moving = false;
     *anim_state = AnimState::Attack;
+    anim_frame.0 = 0;
     sword_event.send_default();
-  } else {
+  } else if *anim_state != AnimState::Attack {
     if key.pressed(KeyCode::Up) {
       dir_facing = MoveDir::Up;
       is_moving = true;
@@ -100,7 +110,11 @@ pub fn handle_input(
         walk_event.send(WalkEvent{ direction: dir_facing });
       }
     } else if *anim_state != AnimState::Attack {
-      *anim_state = AnimState::Idle;
+      if health.0 < health.1 as i8 {
+        *anim_state = AnimState::IdleInjured;
+      } else {
+        *anim_state = AnimState::Idle;
+      }
     }
   }
 
@@ -116,28 +130,56 @@ pub fn setup_player_animations() -> AnimationIndices {
   };
 
   // IDLE
-  animation_indices.timer_duration.insert(AnimState::Idle, 0.2);
+  animation_indices.timer_duration.insert(AnimState::Idle, 0.15);
   animation_indices.sheet_index.insert(AnimState::Idle, 0);
   animation_indices.animations.insert((AnimState::Idle, MoveDir::Up), AnimationDirection {
-    frames : vec![24, 25, 26, 27, 28, 29, 30, 31],
+    frames : vec![30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Idle, MoveDir::Down), AnimationDirection {
-    frames : vec![16, 17, 18, 19, 20, 21, 22, 23],
+    frames : vec![20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Idle, MoveDir::Left), AnimationDirection {
-    frames : vec![8, 9, 10, 11, 12, 13, 14, 15],
+    frames : vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
     flip_x: false,
     flip_y: false,
     looping: true
   });
   animation_indices.animations.insert((AnimState::Idle, MoveDir::Right), AnimationDirection {
-    frames : vec![0, 1, 2, 3, 4, 5, 6, 7],
+    frames : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+
+  // IDLE Injured
+  animation_indices.timer_duration.insert(AnimState::IdleInjured, 0.15);
+  animation_indices.sheet_index.insert(AnimState::IdleInjured, 0);
+  animation_indices.animations.insert((AnimState::IdleInjured, MoveDir::Up), AnimationDirection {
+    frames : vec![70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleInjured, MoveDir::Down), AnimationDirection {
+    frames : vec![60, 61, 62, 63, 64, 65, 66, 67, 68, 69],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleInjured, MoveDir::Left), AnimationDirection {
+    frames : vec![50, 51, 52, 53, 54, 55, 56, 57, 58, 59],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::IdleInjured, MoveDir::Right), AnimationDirection {
+    frames : vec![40, 41, 42, 43, 44, 45, 46, 47, 48, 49],
     flip_x: false,
     flip_y: false,
     looping: true
@@ -227,45 +269,34 @@ pub fn setup_player_animations() -> AnimationIndices {
     looping: false
   });
 
+  // DYING
+  animation_indices.timer_duration.insert(AnimState::Dead, 0.2);
+  animation_indices.sheet_index.insert(AnimState::Dead, 3);
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Up), AnimationDirection {
+    frames : vec![0, 1, 2, 3],
+    flip_x: true,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Down), AnimationDirection {
+    frames : vec![0, 1, 2, 3],
+    flip_x: false,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Left), AnimationDirection {
+    frames : vec![0, 1, 2, 3],
+    flip_x: true,
+    flip_y: false,
+    looping: false
+  });
+  animation_indices.animations.insert((AnimState::Dead, MoveDir::Right), AnimationDirection {
+    frames : vec![0, 1, 2, 3],
+    flip_x: false,
+    flip_y: false,
+    looping: false
+  });
+
   animation_indices
 }
 
-pub fn animate_sprites(
-  time: Res<Time>,
-  atlas_handles: Res<AtlasHandles>,
-  mut query: Query<(&mut AnimState, &MoveDir, &mut AnimFrame, &AnimationIndices, &mut AnimationTimer, &mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>
-) {
-  for (mut anim_state, move_dir, mut frame, indices, mut timer, mut sprite, mut texture_atlas) in &mut query {
-
-    timer.tick(time.delta());
-    if timer.just_finished() {
-      let info = &indices.animations[&(*anim_state, *move_dir)];
-      let next_frame_index = 
-      if info.looping {
-        (frame.0 + 1) % info.frames.len()
-      } else if (frame.0 + 1) < info.frames.len() - 1 {
-        frame.0 + 1
-      } else if *anim_state != AnimState::Dead {
-        // Not looping and at end of frames.  Go back to Idle If not Dead.
-        *anim_state = AnimState::Idle;
-        0
-      } else {
-        // Dead... stay dead
-        info.frames.len() - 1
-      };
-      
-      sprite.index = info.frames[next_frame_index];
-
-      frame.0 = next_frame_index;
-
-      sprite.flip_x = info.flip_x;
-      sprite.flip_y = info.flip_y;
-
-      if *texture_atlas != atlas_handles.handles[indices.sheet_index[&anim_state]] {
-        *texture_atlas = atlas_handles.handles[indices.sheet_index[&anim_state]].clone();
-      }
-
-      *timer = AnimationTimer(Timer::from_seconds(indices.timer_duration[&anim_state], TimerMode::Repeating));
-    }
-  }
-}

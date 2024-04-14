@@ -6,14 +6,21 @@ pub struct EventPlugin;
 
 impl Plugin for EventPlugin {
   fn build(&self, app: &mut App) {
-      app.add_event::<WalkEvent>()
+      app.add_event::<StartGameEvent>()
+         .add_event::<WalkEvent>()
          .add_event::<RunEvent>()
          .add_event::<SwordSwingEvent>()
          .add_event::<SwordMissEvent>()
          .add_event::<SwordHitEvent>()
-         .add_event::<AxolDeath>();
+         .add_event::<AxolBiteEvent>()
+         .add_event::<AxolDeath>()
+         .add_event::<PlayerDeathEvent>();
   }
 }
+
+#[derive(Event, Default)]
+pub struct StartGameEvent;
+
 
 #[derive(Event, Default)]
 pub struct WalkEvent {
@@ -39,6 +46,13 @@ pub struct SwordHitEvent {
 }
 
 #[derive(Event, Default)]
+pub struct AxolBiteEvent {
+  pub amount: u8
+}
+
+
+#[derive(Event, Default)]
 pub struct AxolDeath;
 
-
+#[derive(Event, Default)]
+pub struct PlayerDeathEvent;
