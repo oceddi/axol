@@ -72,8 +72,8 @@ fn setup_new_game (
   mut startgame_event: EventWriter<StartGameEvent>,
   mut newwave_event: EventWriter<NewWaveEvent>,
 ) {
-  game.wave_number = 1;
-  game.lives_remaining = 1;
+  game.wave_number = 0;
+  game.lives_remaining = 3;
 
   *score = Score(0);
 
