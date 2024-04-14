@@ -1,13 +1,20 @@
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{axol::Axol, events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, SwordHitEvent, SwordMissEvent, SwordSwingEvent}, player::Player, score::Score, sprite::{AnimState, MoveDir}};
+use crate::{axol::Axol, events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, SwordHitEvent, SwordMissEvent, SwordSwingEvent, WalkEvent}, game::InGameSet, player::Player, score::Score, sprite::{self, AnimFrame, AnimState, MoveDir}};
 
 pub struct CombatPlugin;
 
 impl Plugin for CombatPlugin {
   fn build(&self, app: &mut App) {
-      app.add_systems(Update, (check_player_attack, handle_player_damage, check_axol_attack, handle_axol_damage));
+      app.add_systems(Update, (
+        check_player_attack,
+        handle_player_damage,
+        check_axol_attack,
+        walk_to_player,
+        handle_axol_damage,
+        despawn_dead_entities
+      ).in_set(InGameSet::Combat));
   }
 }
 
@@ -68,11 +75,8 @@ pub fn handle_player_damage (
     if target_health.0 > 0 {
       target_health.0 -= hit.amount as i8;
       if target_health.0 <= 0 {
-        *target_state = AnimState::Dead;
         player_death.send_default();
         println!("YOU DIED!!");
-      } else {
-        *target_state = AnimState::Idle;
       }
     }
   }
@@ -116,26 +120,82 @@ pub fn check_axol_attack(
       }
     }
   }
-  
+}
+
+pub fn walk_to_player (
+    mut axol: Query<(Entity, &Transform, &mut AnimState, &mut MoveDir, &Health), With<Axol>>,
+    player: Query<(&Transform, &Health), With<Player>>,
+    mut walk_event: EventWriter<WalkEvent>,
+) {
+    let (player_transform, player_health) = player.get_single().expect("Player despawned");
+
+    for (
+        entity,
+        axol_transform,
+        mut anim_state,
+        mut axol_dir,
+        axol_health
+    ) in axol.iter_mut() {
+        // Calculate x and y distances
+        let dx = axol_transform.translation.x - player_transform.translation.x;
+        let dy = axol_transform.translation.y - player_transform.translation.y;
+
+        let distance = dx.hypot(dy);
+
+        if axol_health.0 > 0 && player_health.0 > 0 {
+            if distance > 70. {
+                if (dx.abs() > dy.abs()) && (dx > 0.) {
+                    *axol_dir = MoveDir::Left;
+                } else if (dx.abs() > dy.abs()) && (dx < 0.) {
+                    *axol_dir = MoveDir::Right;
+                } else if (dy.abs() > dx.abs()) && (dy > 0.) {
+                    *axol_dir = MoveDir::Down;
+                } else if (dy.abs() > dx.abs()) && (dy < 0.) {
+                    *axol_dir = MoveDir::Up;
+                }
+
+                walk_event.send(WalkEvent { direction: *axol_dir, entity: entity });
+                *anim_state = AnimState::Walk;
+            }
+        }
+    }
 }
 
 
 pub fn handle_axol_damage (
   mut score: ResMut<Score>,
   mut event: EventReader<SwordHitEvent>,
-  mut axol_list: Query<(&mut AnimState, &mut Health), With<Axol>>,
+  mut axol_list: Query<(&mut AnimState, &mut AnimFrame, &mut Health, &mut AttackCooldown), With<Axol>>,
   mut axol_death: EventWriter<AxolDeath>
 ) {
   for hit in event.read() {
-    let (mut target_state, mut target_health) = axol_list.get_mut(hit.target).expect("No target for attack");
+    let (mut target_state, mut target_frame, mut target_health, mut cooldown_timer) = axol_list.get_mut(hit.target).expect("No target for attack");
 
     if target_health.0 > 0 {
       target_health.0 -= hit.amount as i8;
       if target_health.0 <= 0 {
         *target_state = AnimState::Dead;
+        *target_frame = sprite::AnimFrame(0);
         axol_death.send_default();
         **score += 100;
+        *cooldown_timer = AttackCooldown(Timer::from_seconds(8.0, TimerMode::Once));
       }
     }
   }
+}
+
+fn despawn_dead_entities(
+  mut commands: Commands,
+  time: Res<Time>,
+  mut query: Query<(Entity, &Health, &mut AttackCooldown), With<Axol>>
+) {
+    for (entity, health, mut cooldown_timer) in query.iter_mut() {
+        // Entity doesn't have any health.
+        if health.0 <= 0 {
+            cooldown_timer.tick(time.delta());
+            if cooldown_timer.finished() {
+              commands.entity(entity).despawn_recursive();
+            }
+        }
+    }
 }

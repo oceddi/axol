@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{combat::Health, events::{RunEvent, StartGameEvent, SwordSwingEvent, WalkEvent}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
+use crate::{combat::Health, events::{RunEvent, StartGameEvent, SwordSwingEvent, WalkEvent}, game::{GameState, InGameSet}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
 
 #[derive(Default, Component, PartialEq)]
 pub struct Moving(pub bool);
@@ -9,8 +9,10 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
-      app.add_systems(PostStartup, setup_player)
-      .add_systems(Update, handle_input);
+      app.add_systems(OnExit(GameState::Splash), setup_player)
+         .add_systems(Update,
+           (handle_input).in_set(InGameSet::PlayerMovement)
+          );
   }
 }
 
@@ -33,7 +35,6 @@ pub struct PlayerBundle {
 pub fn setup_player(
   mut commands: Commands,
   atlas_handles: Res<AtlasHandles>,
-  mut startgame_event: EventWriter<StartGameEvent>,
 ) {
   let sprite_player = TextureAtlasSprite {
     index: 0,
@@ -61,8 +62,6 @@ pub fn setup_player(
       anim_frame: AnimFrame(0)
     }
   );
-
-  startgame_event.send_default();
 }
 
 pub fn handle_input(
@@ -71,9 +70,9 @@ pub fn handle_input(
   mut walk_event: EventWriter<WalkEvent>,
   mut run_event: EventWriter<RunEvent>,
   mut sword_event: EventWriter<SwordSwingEvent>,
-  mut player: Query<(&mut Moving, &mut MoveDir, &mut AnimState, &mut AnimFrame, &Health), With<Player>>
+  mut player: Query<(Entity, &mut Moving, &mut MoveDir, &mut AnimState, &mut AnimFrame, &Health), With<Player>>
 ) {
-  let (mut moving, mut move_dir, mut anim_state, mut anim_frame, health) = player.get_single_mut().expect("player not spawned");
+  let (entity, mut moving, mut move_dir, mut anim_state, mut anim_frame, health) = player.get_single_mut().expect("player not spawned");
   let mut dir_facing = *move_dir;
   let mut is_moving = false;
   let shift = key.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
@@ -107,7 +106,7 @@ pub fn handle_input(
         run_event.send(RunEvent{ direction: dir_facing });
       } else {
         *anim_state = AnimState::Walk;
-        walk_event.send(WalkEvent{ direction: dir_facing });
+        walk_event.send(WalkEvent{ direction: dir_facing, entity: entity });
       }
     } else if *anim_state != AnimState::Attack {
       if health.0 < health.1 as i8 {

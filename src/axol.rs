@@ -1,64 +1,22 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use crate::{combat::{AttackCooldown, Health}, player::Moving, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, AtlasHandles, MoveDir}};
-
-pub struct AxolPlugin;
-
-impl Plugin for AxolPlugin {
-  fn build(&self, app: &mut App) {
-      app.add_systems(PostStartup, setup_axol);
-  }
-}
+use crate::{combat::{AttackCooldown, Health}, player::Moving, spawner::{SpawnTimer, Spawner, SpawnerBundle, WaveCount}, sprite::{AnimFrame, AnimState, AnimationDirection, AnimationIndices, AnimationTimer, MoveDir}};
 
 #[derive(Default, Component)]
 pub struct Axol;
 
 #[derive(Default, Bundle)]
 pub struct AxolBundle {
-  axol: Axol,
-  health: Health,
-  anim_state: AnimState,
-  moving: Moving,
-  move_dir: MoveDir,
-  sprite_sheet: SpriteSheetBundle,
-  animation_indices: AnimationIndices,
-  anim_timer: AnimationTimer,
-  anim_frame: AnimFrame,
-  cooldown: AttackCooldown
-}
-
-
-pub fn setup_axol(
-  mut commands: Commands,
-  atlas_handles: Res<AtlasHandles>
-) {
-  let sprite_axol = TextureAtlasSprite {
-    index: 0,
-    ..default()
-  };
-
-  commands.spawn(
-    AxolBundle {
-      axol: Axol,
-      health: Health(20, 20),
-      anim_state: AnimState::Idle,
-      moving: Moving(false),
-      move_dir: MoveDir::Left,
-      sprite_sheet: SpriteSheetBundle {
-        sprite: sprite_axol,
-        texture_atlas: atlas_handles.handles[4].clone(),
-        transform: Transform {
-          translation: Vec3{ x: 605., y: 620., z: 10. },
-          ..default()
-        },
-        ..default()
-      },
-      animation_indices: setup_axol_animations(),
-      anim_timer: AnimationTimer(Timer::from_seconds(0.8, TimerMode::Repeating)),
-      anim_frame: AnimFrame(0),
-      cooldown: AttackCooldown(Timer::from_seconds(1.5, TimerMode::Repeating))
-    },
-  );
+  pub axol: Axol,
+  pub health: Health,
+  pub anim_state: AnimState,
+  pub moving: Moving,
+  pub move_dir: MoveDir,
+  pub sprite_sheet: SpriteSheetBundle,
+  pub animation_indices: AnimationIndices,
+  pub anim_timer: AnimationTimer,
+  pub anim_frame: AnimFrame,
+  pub cooldown: AttackCooldown
 }
 
 pub fn setup_axol_animations() -> AnimationIndices {
@@ -119,6 +77,34 @@ pub fn setup_axol_animations() -> AnimationIndices {
   });
   animation_indices.animations.insert((AnimState::IdleInjured, MoveDir::Right), AnimationDirection {
     frames : vec![2, 3],
+    flip_x: true,
+    flip_y: false,
+    looping: true
+  });
+
+  // WALK
+  animation_indices.timer_duration.insert(AnimState::Walk, 0.1);
+  animation_indices.sheet_index.insert(AnimState::Walk, 4);
+  animation_indices.animations.insert((AnimState::Walk, MoveDir::Up), AnimationDirection {
+    frames : vec![10, 11, 12, 13, 14],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Walk, MoveDir::Down), AnimationDirection {
+    frames : vec![10, 11, 12, 13, 14],
+    flip_x: true,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Walk, MoveDir::Left), AnimationDirection {
+    frames : vec![10, 11, 12, 13, 14],
+    flip_x: false,
+    flip_y: false,
+    looping: true
+  });
+  animation_indices.animations.insert((AnimState::Walk, MoveDir::Right), AnimationDirection {
+    frames : vec![10, 11, 12, 13, 14],
     flip_x: true,
     flip_y: false,
     looping: true

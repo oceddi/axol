@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-use crate::combat::Health;
+use crate::{combat::Health, game::InGameSet};
 
 pub struct SpritePlugin;
 
 impl Plugin for SpritePlugin {
   fn build(&self, app: &mut App) {
       app.add_systems(Startup, setup_atlases)
-         .add_systems(Update, animate_sprites);
+         .add_systems(Update, (animate_sprites));
   }
 }
 

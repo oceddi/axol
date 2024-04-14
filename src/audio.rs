@@ -1,13 +1,21 @@
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, StartGameEvent, SwordHitEvent, SwordMissEvent};
+use crate::{events::{AxolBiteEvent, AxolDeath, PlayerDeathEvent, StartGameEvent, SwordHitEvent, SwordMissEvent}, game::{GameState, InGameSet}};
 pub struct GameAudioPlugin;
 
 impl Plugin for GameAudioPlugin {
   fn build(&self, app: &mut App) {
     app.init_resource::<AudioHandles>()
-        .add_systems(Update, (play_cave_theme_1_sound, play_sword_hit_sound, play_sword_miss_sound, play_axol_bite_sound, play_axol_died_sound, play_player_died_sound));
+       .add_systems(Update, 
+          (
+          play_cave_theme_1_sound,
+          play_sword_hit_sound,
+          play_sword_miss_sound,
+          play_axol_bite_sound,
+          play_axol_died_sound,
+          play_player_died_sound
+        ).in_set(InGameSet::PlayAudio));
   }
 }
 
@@ -53,14 +61,26 @@ pub struct BiteAudio;
 #[derive(Component)]
 pub struct DeathAudio;
 
+#[derive(Component)]
+pub struct Music;
 
 pub fn play_cave_theme_1_sound(
   mut commands: Commands,
   handle: Res<AudioHandles>,
+  state: Res<State<GameState>>,
   mut event: EventReader<StartGameEvent>,
+  mut query_music: Query<(Entity, &AudioSink), With<Music>>
 ) {
   if event.read().next().is_some() {
+
+    if let Ok((entity, music)) = query_music.get_single_mut() {
+      music.stop();
+      commands.entity(entity).despawn();
+    }
+
+    println!("PLAY MUSIC {:?}", state);
     commands.spawn((
+        Music,
         AudioBundle {
             source: handle.cave_theme_1.clone(),
             settings: PlaybackSettings::DESPAWN,

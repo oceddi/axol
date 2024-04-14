@@ -14,7 +14,9 @@ impl Plugin for EventPlugin {
          .add_event::<SwordHitEvent>()
          .add_event::<AxolBiteEvent>()
          .add_event::<AxolDeath>()
-         .add_event::<PlayerDeathEvent>();
+         .add_event::<PlayerDeathEvent>()
+         .add_event::<GameOverEvent>()
+         .add_event::<NewWaveEvent>();
   }
 }
 
@@ -22,9 +24,10 @@ impl Plugin for EventPlugin {
 pub struct StartGameEvent;
 
 
-#[derive(Event, Default)]
+#[derive(Event)]
 pub struct WalkEvent {
-  pub direction: MoveDir
+  pub direction: MoveDir,
+  pub entity:Entity,
 }
 
 #[derive(Event, Default)]
@@ -56,3 +59,9 @@ pub struct AxolDeath;
 
 #[derive(Event, Default)]
 pub struct PlayerDeathEvent;
+
+#[derive(Event, Default)]
+pub struct GameOverEvent;
+
+#[derive(Event, Default)]
+pub struct NewWaveEvent;
