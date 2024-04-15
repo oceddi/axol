@@ -8,7 +8,7 @@ WASM_TARGET_OUT=target/wasm32-unknown-unknown/release/axol.wasm
 
 all: $(FINAL_BUNDLE)
 
-$(WASM_TARGET_OUT): src/main.rs
+$(WASM_TARGET_OUT): src/*.rs
 	cargo build --release --target wasm32-unknown-unknown
 
 imported_assets: $(wildcard assets/*)

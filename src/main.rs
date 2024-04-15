@@ -28,10 +28,15 @@ mod sprite;
 fn main() {
     App::new()
         .insert_resource(AssetMetaCheck::Never)
-        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()).set(AssetPlugin {
-                mode: AssetMode::Processed,
+        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()).set(WindowPlugin {
+            primary_window: Some(Window {
+                // NOTE: Doesn't work in bevy 0.13 but should in 0.14..
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            }), LdtkPlugin))
+            }),
+            ..default()
+        }), LdtkPlugin))
         .add_plugins((GamePlugin, EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin, CombatPlugin, NoWalkPlugin, ScorePlugin, SpawnerPlugin))
         .insert_resource(LevelSelection::index(0))
         .add_systems(Startup, setup)
