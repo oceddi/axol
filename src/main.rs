@@ -28,7 +28,10 @@ mod sprite;
 fn main() {
     App::new()
         .insert_resource(AssetMetaCheck::Never)
-        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()), LdtkPlugin))
+        .add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()).set(AssetPlugin {
+                mode: AssetMode::Processed,
+                ..default()
+            }), LdtkPlugin))
         .add_plugins((GamePlugin, EventPlugin, PlayerPlugin, PlayerMovementPlugin, SpritePlugin, GameAudioPlugin, CombatPlugin, NoWalkPlugin, ScorePlugin, SpawnerPlugin))
         .insert_resource(LevelSelection::index(0))
         .add_systems(Startup, setup)

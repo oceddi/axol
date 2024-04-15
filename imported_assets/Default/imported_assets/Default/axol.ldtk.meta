@@ -1,0 +1,12 @@
+(
+    meta_format_version: "1.0",
+    processed_info: Some((
+        hash: (62, 167, 200, 206, 167, 75, 153, 245, 14, 175, 202, 101, 28, 49, 186, 86, 83, 61, 142, 228, 184, 76, 159, 24, 115, 171, 96, 252, 41, 236, 33, 51),
+        full_hash: (62, 167, 200, 206, 167, 75, 153, 245, 14, 175, 202, 101, 28, 49, 186, 86, 83, 61, 142, 228, 184, 76, 159, 24, 115, 171, 96, 252, 41, 236, 33, 51),
+        process_dependencies: [],
+    )),
+    asset: Load(
+        loader: "bevy_ecs_ldtk::assets::ldtk_project::LdtkProjectLoader",
+        settings: (),
+    ),
+)
